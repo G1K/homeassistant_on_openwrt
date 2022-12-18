@@ -4,7 +4,7 @@
 set -e
 
 OPENWRT_VERSION=${OPENWRT_VERSION:-21.02}
-HOMEASSISTANT_MAJOR_VERSION="2022.8"
+HOMEASSISTANT_MAJOR_VERSION="2022.11"
 export PIP_DEFAULT_TIMEOUT=100
 
 get_ha_version()
@@ -55,7 +55,7 @@ wget -q https://raw.githubusercontent.com/NabuCasa/hass-nabucasa/$(get_version h
 
 PYCOGNITO_VER=2022.01.0  # zero is required, incorrect version in github
 HOMEASSISTANT_FRONTEND_VERSION=$(get_version home-assistant-frontend)
-IPP_VER=$(get_version pyipp)
+#IPP_VER=$(get_version pyipp)
 PYTHON_MIIO_VER=$(get_version python-miio)
 AIODISCOVER_VER=$(get_version aiodiscover)
 NABUCASA_VER=$(get_version hass-nabucasa)
@@ -121,6 +121,7 @@ opkg install \
   python3-openssl \
   python3-pip \
   python3-pkg-resources \
+  python3-psutil \
   python3-ply \
   python3-pycparser \
   python3-pydoc \
@@ -180,14 +181,20 @@ $(version pyMetno)
 $(version mutagen)
 $(version pyotp)
 $(version gTTS)
-$(version aioesphomeapi)
-$(version zeroconf)
+#$(version aioesphomeapi)
+#$(version zeroconf)
+aioesphomeapi==10.13.0
+zeroconf==0.38.7
 
 # fixed dependencies
 python-jose[cryptography]==3.2.0  # (pycognito dep) 3.3.0 is not compatible with the python3-cryptography in the feed
 
+psutil-home-assistant
+
 # extra services
 hass-configurator==0.4.1
+
+paho-mqtt
 EOF
 
 if [ $LUMI_GATEWAY ]; then
@@ -218,7 +225,7 @@ sed -i 's/botocore<1.13.0,>=1.12.135/botocore<1.13.0,>=1.12.0/' /usr/lib/python$
 echo "Download files"
 
 wget https://github.com/pvizeli/pycognito/archive/${PYCOGNITO_VER}.tar.gz -O - > pycognito-${PYCOGNITO_VER}.tgz
-wget https://github.com/ctalkington/python-ipp/archive/${IPP_VER}.tar.gz -O - > python-ipp-${IPP_VER}.tgz
+#wget https://github.com/ctalkington/python-ipp/archive/${IPP_VER}.tar.gz -O - > python-ipp-${IPP_VER}.tgz
 wget https://pypi.python.org/packages/source/p/python-miio/python-miio-${PYTHON_MIIO_VER}.tar.gz -O - > python-miio-${PYTHON_MIIO_VER}.tar.gz
 wget https://pypi.python.org/packages/source/a/aiodiscover/aiodiscover-${AIODISCOVER_VER}.tar.gz -O - > aiodiscover-${AIODISCOVER_VER}.tar.gz
 echo "Installing pycognito..."
@@ -230,14 +237,14 @@ python3 setup.py install
 cd ..
 rm -rf pycognito-${PYCOGNITO_VER} pycognito-${PYCOGNITO_VER}.tgz
 
-echo "Installing python-ipp..."
-tar -zxf python-ipp-${IPP_VER}.tgz
-cd python-ipp-${IPP_VER}
-sed -i 's/aiohttp>=[0-9\.]*/aiohttp/' requirements.txt
-sed -i 's/yarl>=[0-9\.]*/yarl/' requirements.txt
-python3 setup.py install
-cd ..
-rm -rf python-ipp-${IPP_VER} python-ipp-${IPP_VER}.tgz
+#echo "Installing python-ipp..."
+#tar -zxf python-ipp-${IPP_VER}.tgz
+#cd python-ipp-${IPP_VER}
+#sed -i 's/aiohttp>=[0-9\.]*/aiohttp/' requirements.txt
+#sed -i 's/yarl>=[0-9\.]*/yarl/' requirements.txt
+#python3 setup.py install
+#cd ..
+#rm -rf python-ipp-${IPP_VER} python-ipp-${IPP_VER}.tgz
 
 
 echo "Installing python-miio..."
@@ -262,15 +269,15 @@ cd ..
 rm -rf aiodiscover-${AIODISCOVER_VER} aiodiscover-${AIODISCOVER_VER}.tar.gz
 
 echo "Install hass_nabucasa and ha-frontend..."
-wget https://github.com/NabuCasa/hass-nabucasa/archive/${NABUCASA_VER}.tar.gz -O - > hass-nabucasa-${NABUCASA_VER}.tar.gz
-tar -zxf hass-nabucasa-${NABUCASA_VER}.tar.gz
-cd hass-nabucasa-${NABUCASA_VER}
-sed -i 's/==.*"/"/' setup.py
-sed -i 's/>=.*"/"/' setup.py
-rm -rf /usr/lib/python${PYTHON_VERSION}/site-packages/hass_nabucasa-*.egg
-python3 setup.py install
-cd ..
-rm -rf hass-nabucasa-${NABUCASA_VER}.tar.gz hass-nabucasa-${NABUCASA_VER}
+#wget https://github.com/NabuCasa/hass-nabucasa/archive/${NABUCASA_VER}.tar.gz -O - > hass-nabucasa-${NABUCASA_VER}.tar.gz
+#tar -zxf hass-nabucasa-${NABUCASA_VER}.tar.gz
+#cd hass-nabucasa-${NABUCASA_VER}
+#sed -i 's/==.*"/"/' setup.py
+#sed -i 's/>=.*"/"/' setup.py
+#rm -rf /usr/lib/python${PYTHON_VERSION}/site-packages/hass_nabucasa-*.egg
+#python3 setup.py install
+#cd ..
+#rm -rf hass-nabucasa-${NABUCASA_VER}.tar.gz hass-nabucasa-${NABUCASA_VER}
 
 # tmp might be small for frontend
 cd /root
@@ -353,11 +360,13 @@ mv \
   esphome \
   fan \
   frontend \
+  file_upload \
   geo_location \
   google_assistant \
   google_translate \
   group \
   hassio \
+  hardware \
   history \
   homeassistant \
   homeassistant_alerts \
@@ -377,6 +386,7 @@ mv \
   logbook \
   logger \
   lovelace \
+  min_max \
   manual \
   map \
   media_player \
@@ -401,6 +411,7 @@ mv \
   remote \
   repairs \
   rest \
+  schedule \
   safe_mode \
   scene \
   script \
@@ -424,6 +435,7 @@ mv \
   timer \
   trace \
   tts \
+  update \
   upnp \
   usb \
   vacuum \
@@ -468,6 +480,8 @@ sed -i 's/PyNaCl==[0-9\.]*/PyNaCl/' mobile_app/manifest.json
 sed -i 's/defusedxml==[0-9\.]*/defusedxml/' ssdp/manifest.json
 sed -i 's/netdisco==[0-9\.]*/netdisco/' ssdp/manifest.json
 
+sed -i 's/MultiDictProxy\[str\]/MultiDictProxy/' auth/__init__.py
+
 if [ $LUMI_GATEWAY ]; then
   # remove unwanted zha requirements
   sed -i 's/"bellows==[0-9\.]*",//' zha/manifest.json
@@ -484,6 +498,8 @@ if [ $LUMI_GATEWAY ]; then
   sed -i -E 's/"(bellows|zigpy_deconz|zigpy_xbee|zigpy_znp)":/# "\1":/' zha/diagnostics.py
   sed -i -E 's/import (bellows|zigpy_deconz|zigpy_xbee|zigpy_znp)/# import \1/' zha/diagnostics.py
   sed -i -e '/znp = (/,/)/d' -e '/ezsp = (/,/)/d' -e '/deconz = (/,/)/d' -e '/ti_cc = (/,/)/d' -e '/xbee = (/,/)/d' zha/core/const.py
+  sed -i 's/ RadioType\./# RadioType./' zha/config_flow.py
+  sed -i 's/# RadioType\.zigate/ RadioType.zigate/' zha/config_flow.py
 fi
 
 sed -i 's/"cloud",//' default_config/manifest.json
@@ -500,7 +516,7 @@ sed -i 's/        "/        # "/' homeassistant/generated/config_flows.py
 sed -i 's/    # "mqtt"/    "mqtt"/' homeassistant/generated/config_flows.py
 sed -i 's/    # "esphome"/    "esphome"/' homeassistant/generated/config_flows.py
 sed -i 's/    # "met"/    "met"/' homeassistant/generated/config_flows.py
-sed -i 's/    # "radio_browser"/    "radio_browser"/' homeassistant/generated/config_flows.py
+#sed -i 's/    # "radio_browser"/    "radio_browser"/' homeassistant/generated/config_flows.py
 if [ $LUMI_GATEWAY ]; then
   sed -i 's/    # "zha"/    "zha"/' homeassistant/generated/config_flows.py
 fi
@@ -509,13 +525,13 @@ fi
 sed -i 's/^    "_/    "_disabled_/' homeassistant/generated/zeroconf.py
 # re-enable required ones
 sed -i 's/_disabled_esphomelib./_esphomelib./' homeassistant/generated/zeroconf.py
-sed -i 's/_disabled_ipps./_ipps./' homeassistant/generated/zeroconf.py
-sed -i 's/_disabled_ipp./_ipp./' homeassistant/generated/zeroconf.py
-sed -i 's/_disabled_printer./_printer./' homeassistant/generated/zeroconf.py
+#sed -i 's/_disabled_ipps./_ipps./' homeassistant/generated/zeroconf.py
+#sed -i 's/_disabled_ipp./_ipp./' homeassistant/generated/zeroconf.py
+#sed -i 's/_disabled_printer./_printer./' homeassistant/generated/zeroconf.py
 sed -i 's/_disabled_miio./_miio./' homeassistant/generated/zeroconf.py
 
 # disabling all supported_brands
-sed -i 's/^    /    # /' homeassistant/generated/supported_brands.py
+#sed -i 's/^    /    # /' homeassistant/generated/supported_brands.py
 
 # backport jinja2<3.0 decorator
 sed -i 's/from jinja2 import contextfunction, pass_context/from jinja2 import contextfunction, contextfilter as pass_context/' homeassistant/helpers/template.py
